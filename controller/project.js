@@ -11,81 +11,6 @@ const {
     checkCollectionName
 } = require('../helper/helperFunctions')
 
-const pojectCreation = async(req,res)=>{
-    try {
-        const {
-            projectName,
-            description,
-            types
-        } = req.body
-
-        const projectNameToLower = projectName.toLowerCase();
-        //  save to project
-
-        // send to a function
-        const typeCodeArr = [001,002]
-        var schemaBlueprint = `const mongoose = require('mongoose')
-    
-        const schemaOptions = {
-            timestamps: true,
-            id: false,
-            toJSON: {
-                virtuals: false
-            },
-            toObject: {
-                virtuals: false
-            }
-        }
-        
-        const ${schemaName}Schema = new mongoose.Schema(
-            {
-                did: {
-                    type: String,
-                    required: [true, 'Device id is required.']
-                },
-                logGeneratedDate: {
-                    type: Date
-                },
-                logMsg: {
-                    type: String,
-                    req
-                },
-                device_types: {
-                    type: Number,
-                    enum: ${typeCodeArr}
-                },
-                logType: {
-                    type: String,
-                    enum: ['w']
-                }
-            },
-            schemaOptions
-        )
-                
-        const ${schemaName} = mongoose.model('${schemaName}', ${schemaName}Schema)
-        
-        module.exports = ${schemaName}
-        `
-
-        fs.writeFile(`${__dirname.concat(`/../model/${schemaName}.js`)}`, schemaBlueprint, {
-            encoding: "utf8",
-            flag: "w",
-            mode: 0o666
-        }, (err) => {
-            if (err) {
-                console.log('err: ', err)
-            }
-            console.log('File written successfully')
-            // console.log(fs.readFileSync(../models/${schemaName}.js, 'utf8'))
-        })
-
-        
-        
-    } catch (error) {
-        
-    }
-}
-
 /**
  * 
  * @param {*} req 
@@ -95,9 +20,20 @@ const pojectCreation = async(req,res)=>{
 const getAllRegisterProject = async (req,res)=> {
     try {
         const allRgisterProject = await Projects.find();
-        return res.status(200).json({'status':1,'data':allRgisterProject})
+        return res.status(200).json({'status':1,"data":{'data':allRgisterProject},"message":"Successful"})
     } catch (error) {
-        res.status(500).json({'status': -1,'error': error})
+        res.status(500).json({
+            status: 0,
+            data: {
+              err: {
+                generatedTime: new Date(),
+                errMsg: error.name,
+                msg: error.message,
+                type: 'Project Not Found'
+              }
+            }
+      
+          })
     }
 }
 
@@ -185,7 +121,7 @@ const createNewProject = async (req,res) => {
                 },
                 logType: {
                     type: String,
-                    enum: ["warn","info","error","debug"],
+                    enum: ["verbose","warn","info","error","debug"],
                     default: "info"
                 }
             },
@@ -202,24 +138,42 @@ const createNewProject = async (req,res) => {
             flag: "w",
             mode: 0o666
         }, (err) => {
-            if (err) {
-                console.log('err: ', err)
-            }
+            if (err) throw {"message":"Some error occured during project creation"}
+            // {
+            //     console.log('err: ', err)
+            // }
             console.log('File written successfully')
             // console.log(fs.readFileSync(../models/${schemaName}.js, 'utf8'))
         })
 
 
-        res.status(201).json({"status":1,"savedProject": savedProject})
+        res.status(201).json({"status":1,"data":{"savedProject": savedProject},"message":"Project Saved succefully"})
 
 
     } catch (error) {
         if (error.code === 11000) res.status(409).json({
-            "status":0,
-            "message":"Duplicate project error",
-            "errorMessage":error.message
+            status: 0,
+            data: {
+              err: {
+                generatedTime: new Date(),
+                errMsg: error.name,
+                msg: 'Duplicate Project',
+                type: 'DuplicatePojectError'
+              }
+            }
         })
-        res.status(400).json({"status":0,"errorMessage": 'Some error occurred.',"message":`${error.message}`})
+        res.status(400).json({
+            status: 0,
+            data: {
+              err: {
+                generatedTime: new Date(),
+                errMsg: error.name,
+                msg: error.message,
+                type: 'NotFoundError'
+              }
+            }
+      
+          })
     }
 }
 
@@ -242,16 +196,24 @@ const  getProjectWithProjectCode = async (req,res)=>{
 
         res.status(200).json({
             "status":1,
-            "data":getProject
+            "data":{"data":getProject},
+            "message":"Successful"
         })
 
     } catch (error) {
         console.log(error)
         res.status(400).json({
-            "status":0,
-            "error":error.message,
-            "errorMessage":"Some error ocuured!"
-        })
+            status: 0,
+            data: {
+              err: {
+                generatedTime: new Date(),
+                errMsg: error.name,
+                msg: error.message,
+                type: 'NotFoundError'
+              }
+            }
+      
+          })
     }
 }
 
@@ -342,7 +304,7 @@ const updateProjectWithProjectCode = async(req,res)=>{
                     },
                     logType: {
                         type: String,
-                        enum: ["warn","info","error","debug"],
+                        enum: ["verbose","warn","info","error","debug"],
                         default: "info"
                     }
                 },
@@ -361,9 +323,10 @@ const updateProjectWithProjectCode = async(req,res)=>{
                     flag: "w",
                     mode: 0o666
                 }, (err) => {
-                    if (err) {
-                        console.log('err: ', err)
-                    }
+                    if (err) throw {"message":"Some error occured during project creation"}
+                    // {
+                    //     console.log('err: ', err)
+                    // }
                     console.log('File written successfully')
                     // console.log(fs.readFileSync(../models/${schemaName}.js, 'utf8'))
                 })
@@ -381,18 +344,26 @@ const updateProjectWithProjectCode = async(req,res)=>{
                 "message":"Some error occured during updating the project!!"
             }
             res.status(200).json({
-            "status":1,
-            "message":"Project Updated!!"
-        })
+                "status":1,
+                "data":{},
+                "message":"Project Updated!!"
+            })
 
         
     } catch (error) {
         console.log(error)
         res.status(400).json({
-            "status":0,
-            "message": error.message,
-            "errorMessage":"Invalid data!"
-        })
+            status: 0,
+            data: {
+              err: {
+                generatedTime: new Date(),
+                errMsg: error.name,
+                msg: error.message,
+                type: 'ProjectUpdateError'
+              }
+            }
+      
+          })
     }
 }
 
@@ -441,12 +412,22 @@ const makeEntriesInDeviceLogger = async (req,res) => {
         
         res.status(201).json({
             "status":1,
-            "message":"Logger entry successful"
+            "data":{},
+            "message":"Successful"
         })
     } catch (error) {
         console.log(error)
         res.status(400).json({
-            "error":error
+            status: 0,
+            data: {
+              err: {
+                generatedTime: new Date(),
+                errMsg: error.name,
+                msg: error.message,
+                type: 'LoggerError'
+              }
+            }
+      
         })
     }
 }
@@ -474,28 +455,92 @@ const getProjectWithFilter = async(req,res)=>{
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
-        let lotTypeObjext;
-        if (logTypeList. includes(logType)){
-            lotTypeObjext = await collectionName.find({logType}).skip(skip).limit(limit)
+        let logTypeObject;
+
+        if (deviceCode && did && logType) {
+            console.log("we are inside three condition")
+            logTypeObject =  await collectionName.aggregate([{
+                "$match":{
+                  "$and":[
+                    {"device_types":deviceCode},
+                    {"logType":logType},
+                    {"did":did} 
+                  ]
+               }
+
+              }]);
+        }
+        else if ((deviceCode && did ) || (did && logType) || (logType && deviceCode)){
+            console.log("we are inside two condition")
+            logTypeObject =  await collectionName.aggregate([{
+                "$match":{
+                    "$or":[
+                        {"$and":[
+                          {"logType":logType},
+                          {"did":did} 
+                        ]},
+                        {"$and":[
+                            {"device_types":deviceCode},
+                            {"did":did} 
+                          ]},
+                        {"$and":[
+                        {"device_types":deviceCode},
+                        {"log_type":logType},
+                        ]},
+                    ]
+               }
+              }]);
+        }
+
+        else if (deviceCode || did || logType) {
+            console.log("we are inside One condition")
+            logTypeObject =  await collectionName.aggregate([{
+                "$match":{
+                    "$or":[
+    
+                        {"logType":logType},
+                        {"device_types":deviceCode},
+                        {"did":did},
+                                    
+                    ]
+               }
+              }]);
         }
         else{
-            lotTypeObjext = await collectionName.find().skip(skip).limit(limit)
+            logTypeObject = await collectionName.find().skip(skip).limit(limit)
         }
+
+        
+        // if (logTypeList. includes(logType)){
+        //     lotTypeObjext = await collectionName.find({logType}).skip(skip).limit(limit)
+        // }
+        // else{
+        //     lotTypeObjext = await collectionName.find().skip(skip).limit(limit)
+        // }
 
         // Sending type name instead of type code
         isProjectExist.device_types.map( device => {
-            lotTypeObjext.map( obj => {
+            logTypeObject.map( obj => {
                 if(device.typeCode === obj.device_types) {
-                    obj.device_types = device.typeName
+                    obj.device_types = `${obj.device_types}|${device.typeName}`
                 }
             })
         }) 
 
-        return res.json({"message":"recieved at getProjectWithFilter ",'data':lotTypeObjext})
+        return res.json({"status":1,"message":"Successfull ","data":{'logs':logTypeObject}})
     } catch (error) {
         return res.json({
-            "error":error.message
-        })
+            status: 0,
+            data: {
+              err: {
+                generatedTime: new Date(),
+                errMsg: error.name,
+                msg: error.message,
+                type: 'ProjectFilterError'
+              }
+            }
+      
+          })
     }
 }
 
@@ -516,13 +561,25 @@ const getdeviceIdProjectWise = async(req,res)=>{
         const collectionName = require(`../model/${isProjectExist.collection_name}.js`)
         const listOfId = await collectionName.find().select('did')
         return res.json({
-            'deviceIds':listOfId
+            "status":1,
+            "data":{'deviceIds':listOfId},
+            "message":"Successful"
         })
+
     } catch (error) {
         console.log(error)
         return res.json({
-            "errorMessage":"some error occured"
-        })
+            status: 0,
+            data: {
+              err: {
+                generatedTime: new Date(),
+                errMsg: error.name,
+                msg: error.message,
+                type: 'NotFoundError'
+              }
+            }
+      
+          })
     }
 }
 
@@ -545,17 +602,28 @@ const getProjectLogs = async(req,res)=>{
         const lastLogEntry = await collectionName.findOne().sort({'createdAt':-1})
 
         return res.json({
+            "status":1,
             "data":{
                 totalLogCount: totalLogCount[0].count,
                 typeWiseCount,
                 lastLogEntry: lastLogEntry.createdAt
-            }
+            },
+            "message":"successfull"
         })
 
     } catch (error) {
         return res.json({
-            "error":error
-        })
+            status: 0,
+            data: {
+              err: {
+                generatedTime: new Date(),
+                errMsg: error.name,
+                msg: error.message,
+                type: 'NotFoundError'
+              }
+            }
+      
+          })
     }
 }
 

@@ -11,10 +11,11 @@ const {
     getProjectLogs
 } = require('../controller/project');
 
-const {authUser} = require('../middleware/authenticate')
+const {authUser} = require('../middleware/authenticate');
+const { authDevice } = require('../middleware/validate');
 
 // Unprotected
-router.post('/makeLog/:project_code', makeEntriesInDeviceLogger)
+router.post('/makeLog/:project_code',authDevice ,makeEntriesInDeviceLogger)
 
 
 // Protected

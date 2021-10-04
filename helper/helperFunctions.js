@@ -28,9 +28,17 @@ const checkCollectionName= async (projectName) => {
   return false
 }
 
+const checkMD5 = (md5Hash)=>{
+  // Regular expression to check if string is a MD5 hash
+  const regexExp = /^[a-f0-9]{32}$/gi;
+
+  return regexExp.test(md5Hash);
+}
+
 
 module.exports = {
   makeid,
   removeAllSpecialChars,
-  checkCollectionName
+  checkCollectionName,
+  checkMD5
 }

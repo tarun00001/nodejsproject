@@ -55,7 +55,7 @@ const registerUser = async (req,res) => {
         const savedUser = await user.save(user);
 
         if (savedUser) {
-            res.status(201).json({"status":1,"message":'Registration successfull!','name':savedUser.name})
+            res.status(201).json({"status":1,"data":{'name':savedUser.name},"message":'Registration successfull!',})
 
         }else throw {
             "status":0,
@@ -69,8 +69,28 @@ const registerUser = async (req,res) => {
 
     } catch (error) {
         console.log(error);
-        if (error.code === 11000) res.status(409).json({"status":0,"message":error.message,"errorMessage":"Account already exist"})
-        res.status(400).json({"status":0,"message":error.message, "errorMessage":`${error.message}`})
+        if (error.code === 11000) res.status(409).json({
+            status: 0,
+            data: {
+              err: {
+                generatedTime: new Date(),
+                errMsg: error.name,
+                msg: error.message,
+                type: 'AccountExistError'
+              }
+            }
+        })
+        res.status(400).json({
+            status: 0,
+            data: {
+              err: {
+                generatedTime: new Date(),
+                errMsg: error.name,
+                msg: error.message,
+                type: 'RegisterError'
+              }
+            }
+        })
     }
 }
         
@@ -137,15 +157,22 @@ const loginUser = async (req,res) => {
         const token = await jwtr.sign(id, process.env.JWT_SECRET, {expiresIn: '15d'})
     
         // Assign token to http cookies
-        return res.status(201).json({ "status":1,'message':`Logged In ${email} ${password}`,'token':token, 'name':isUserExist.name});
+        return res.status(201).json({ "status":1,'message':`Logged In Successfull`,"data":{'token':token, 'name':isUserExist.name}});
            
     } catch (error) {
         console.log(error)
         res.status(401).json({
-            "status":0,
-            "error": error.message,
-            "errorMessage":"Some error occured!"
-        })
+            status: 0,
+            data: {
+              err: {
+                generatedTime: new Date(),
+                errMsg: error.name,
+                msg: error.message,
+                type: 'NotFoundError'
+              }
+            }
+      
+          })
     }
 }
 
@@ -155,11 +182,21 @@ const logoutUser = async(req,res) => {
         console.log(req.user)
         const result = await jwtr.destroy(req.jti)
         console.log(result)
-        return res.status(200).json({'status': 1,'message':'Logged out successfully!'});
+        return res.status(200).json({'status': 1,"data":{},'message':'Logged out successfully!'});
         // return res.json({'message':'Logged out successfully!','token':token});
 
     } catch (error) {
-        return res.status(500).json({'errormessage':`Server response error: ${error.message}`});
+        return res.status(500).json({
+            status: 0,
+            data: {
+              err: {
+                generatedTime: new Date(),
+                errMsg: error.name,
+                msg: error.message,
+                type: 'LogoutError'
+              }
+            }
+        });
     }
 }
 
