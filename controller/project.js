@@ -29,11 +29,10 @@ const getAllRegisterProject = async (req,res)=> {
                 generatedTime: new Date(),
                 errMsg: error.name,
                 msg: error.message,
-                type: 'Project Not Found'
+                type: 'ProjectNotFound'
               }
             }
-      
-          })
+        })
     }
 }
 
@@ -442,7 +441,9 @@ const makeEntriesInDeviceLogger = async (req,res) => {
 const getProjectWithFilter = async(req,res)=>{
     try {
         const {projectCode}  = req.params
-        const {logType} = req.query
+        const {logType,
+            did,
+            deviceCode} = req.query
         const isProjectExist = await Projects.findOne({code:projectCode})
         if (!isProjectExist) throw {
             "message":"Project code invalid"
@@ -529,6 +530,7 @@ const getProjectWithFilter = async(req,res)=>{
 
         return res.json({"status":1,"message":"Successfull ","data":{'logs':logTypeObject}})
     } catch (error) {
+        console.log(error)
         return res.json({
             status: 0,
             data: {
