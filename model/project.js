@@ -20,6 +20,10 @@ const projectSchema = mongoose.Schema({
         type: String,
         unique:true,
         required: [true, 'Collection name is required.']
+    },
+    status: {
+        type: Boolean,
+        default: true
     }
 }, {timestamps:true})
 

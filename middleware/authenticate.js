@@ -44,4 +44,17 @@ const authUser = async (req,res,next)=>{
     }
 }
 
-module.exports = {authUser}
+const restrictToRole = async (req, res, next) => {
+    // console.log("request created",req.user)
+    const user = await User.findById(req.user)
+    console.log("Details of user",user)
+    console.log(user.isSuperAdmin)
+
+    if(!(user.isSuperAdmin)){
+        return res.status(403).json({ error: "You dont have permission to access this." })
+    }
+    next();
+}
+
+
+module.exports = {authUser,restrictToRole}

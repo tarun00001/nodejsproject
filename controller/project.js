@@ -629,6 +629,55 @@ const getProjectLogs = async(req,res)=>{
     }
 }
 
+const getDeviceCount = async (req,res) => {
+    try {
+        const {projectCode} = req.params;
+        
+        const projectCollection = await Projects.findOne({code: projectCode})
+        if(!projectCollection) throw{
+            "message":"Project code invalid "
+        }
+        const createdAt = projectCollection.createdAt;
+        
+       
+        const currentStatus = projectCollection.status;
+        
+       
+        const modelList = projectCollection.device_types
+       
+     
+        const collectionName = require(`../model/${projectCollection.collection_name}.js`)
+        if(!collectionName) throw{
+            "message":"Collection Name Not Found "
+        }
+        const collection = await collectionName.find().distinct('did')
+    
+        return res.json({
+            "status":1,
+            "data":{
+                projectCreationDate: createdAt,
+                currentStatus,
+                modelList,
+                deviceCount: collection.length
+            },
+            "message":"successfull"
+        })
+    } catch (error) {
+        return res.json({
+            data: {
+                err: {
+                  generatedTime: new Date(),
+                  errMsg: error.name,
+                  msg: error.message,
+                  type: 'NotFoundError'
+                }
+              }
+        
+        })
+    }
+}
+
+
 module.exports = {
     createNewProject,
     getAllRegisterProject,
@@ -637,6 +686,6 @@ module.exports = {
     updateProjectWithProjectCode,
     getProjectWithFilter,
     getdeviceIdProjectWise,
-    getProjectLogs
-    
+    getProjectLogs,
+    getDeviceCount
 }
