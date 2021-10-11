@@ -157,7 +157,7 @@ const loginUser = async (req,res) => {
         const token = await jwtr.sign(id, process.env.JWT_SECRET, {expiresIn: '15d'})
     
         // Assign token to http cookies
-        return res.status(201).json({ "status":1,'message':`Logged In Successfull`,"data":{'token':token, 'name':isUserExist.name}});
+        return res.status(201).json({ "status":1,'message':`Logged In Successfull`,"data":{'token':token, 'name':isUserExist.name, 'isSuperAdmin': isUserExist.isSuperAdmin}});
            
     } catch (error) {
         console.log(error)
