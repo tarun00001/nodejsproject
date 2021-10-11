@@ -18,12 +18,12 @@ dotenv.config()
 
 const authUser = async (req,res,next)=>{
     try {
-        if(!req.headers['authorization']) throw {"message":"Your are not logged in!!"}
+        if(!req.headers['authorization']) throw {"message":"You are not logged in!!"}
         const token = req.headers['authorization'].split(' ')[1];
 
         if(!token){
             // return res.status(401).json({'errormessage':"Authentication Failed!"});
-            throw {"message":"unauthenticated"};
+            throw {"message":"Unauthenticated"};
         }
         
         const verified = await jwtr.verify(token,process.env.JWT_SECRET);
@@ -51,7 +51,10 @@ const restrictToRole = async (req, res, next) => {
     console.log(user.isSuperAdmin)
 
     if(!(user.isSuperAdmin)){
-        return res.status(403).json({ error: "You dont have permission to access this." })
+        return res.status(403).json({ 
+            status:0,
+            errorMessage: 'Some error occured!',
+            error: "You dont have permission to access this." })
     }
     next();
 }
