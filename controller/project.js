@@ -1,6 +1,7 @@
 const mongoose = require('mongoose')
 const dotenv = require('dotenv')
 const Projects = require('../model/project')
+const QueryHelper = require('../helper/queryHelper')
 const fs = require("fs")
 dotenv.config();
 
@@ -441,9 +442,6 @@ const makeEntriesInDeviceLogger = async (req,res) => {
 const getProjectWithFilter = async(req,res)=>{
     try {
         const {projectCode}  = req.params
-        const {logType,
-            did,
-            deviceCode} = req.query
         const isProjectExist = await Projects.findOne({code:projectCode})
         if (!isProjectExist) throw {
             "message":"Project code invalid"
@@ -458,66 +456,9 @@ const getProjectWithFilter = async(req,res)=>{
         const skip = (page - 1) * limit;
         let logTypeObject;
 
-        if (deviceCode && did && logType) {
-            console.log("we are inside three condition")
-            logTypeObject =  await collectionName.aggregate([{
-                "$match":{
-                  "$and":[
-                    {"device_types":deviceCode},
-                    {"logType":logType},
-                    {"did":did} 
-                  ]
-               }
+        const features = new QueryHelper(collectionName.find({}),req.query).filter().sort().paginate()
+        logTypeObject = await features.query
 
-              }]);
-        }
-        else if ((deviceCode && did ) || (did && logType) || (logType && deviceCode)){
-            console.log("we are inside two condition")
-            logTypeObject =  await collectionName.aggregate([{
-                "$match":{
-                    "$or":[
-                        {"$and":[
-                          {"logType":logType},
-                          {"did":did} 
-                        ]},
-                        {"$and":[
-                            {"device_types":deviceCode},
-                            {"did":did} 
-                          ]},
-                        {"$and":[
-                        {"device_types":deviceCode},
-                        {"log_type":logType},
-                        ]},
-                    ]
-               }
-              }]);
-        }
-
-        else if (deviceCode || did || logType) {
-            console.log("we are inside One condition")
-            logTypeObject =  await collectionName.aggregate([{
-                "$match":{
-                    "$or":[
-    
-                        {"logType":logType},
-                        {"device_types":deviceCode},
-                        {"did":did},
-                                    
-                    ]
-               }
-              }]);
-        }
-        else{
-            logTypeObject = await collectionName.find().skip(skip).limit(limit)
-        }
-
-        
-        // if (logTypeList. includes(logType)){
-        //     lotTypeObjext = await collectionName.find({logType}).skip(skip).limit(limit)
-        // }
-        // else{
-        //     lotTypeObjext = await collectionName.find().skip(skip).limit(limit)
-        // }
 
         // Sending type name instead of type code
         isProjectExist.device_types.map( device => {
@@ -528,7 +469,7 @@ const getProjectWithFilter = async(req,res)=>{
             })
         }) 
 
-        return res.json({"status":1,"message":"Successfull ","data":{'logs':logTypeObject}})
+        return res.json({"status":1,"message":"Successfull ","data":{'count': logTypeObject.length,'logs':logTypeObject}})
     } catch (error) {
         console.log(error)
         return res.json({
