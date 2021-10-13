@@ -49,7 +49,7 @@ const createNewProject = async (req,res) => {
         const{
             name,
             description,
-            device_type
+            device_type,
         } = req.body
         // device type will be  array 
         const arrayOfObjects = [];
@@ -123,6 +123,18 @@ const createNewProject = async (req,res) => {
                     type: String,
                     enum: ["verbose","warn","info","error","debug"],
                     default: "info"
+                },
+                version: {
+                    type: String,
+                    required: [true, 'Log version is required.']
+                },
+                modelName: {
+                    type: String,
+                    required: [true, 'Log model name is required.']
+                },
+                osArchitecture: {
+                    type: String,
+                    required: [true, 'Log OS architecture is required.']
                 }
             },
             schemaOptions
@@ -306,6 +318,18 @@ const updateProjectWithProjectCode = async(req,res)=>{
                         type: String,
                         enum: ["verbose","warn","info","error","debug"],
                         default: "info"
+                    },
+                    version: {
+                        type: String,
+                        required: [true, 'Log version is required.']
+                    },
+                    modelName: {
+                        type: String,
+                        required: [true, 'Log model name is required.']
+                    },
+                    osArchitecture: {
+                        type: String,
+                        required: [true, 'Log OS architecture is required.']
                     }
                 },
                 schemaOptions
@@ -389,6 +413,9 @@ const makeEntriesInDeviceLogger = async (req,res) => {
             log_message,
             logGeneratedDate,
             log_type,
+            version,
+            modelName,
+            osArchitecture
         } = req.body
 
         //  above details will be put in project tables
@@ -400,7 +427,10 @@ const makeEntriesInDeviceLogger = async (req,res) => {
             logGeneratedDate,
             logMsg: log_message,
             device_types: model_type,
-            logType:log_type
+            logType:log_type,
+            version,
+            modelName,
+            osArchitecture
         })
 
         const isLoggerSaved = await putDataIntoLoggerDb.save(putDataIntoLoggerDb)
@@ -618,6 +648,129 @@ const getDeviceCount = async (req,res) => {
     }
 }
 
+const getLogsCountWithOs = async (req,res) => {
+    try {
+        const {projectCode} = req.params;
+        console.log( req.params)
+        const projectCollection = await Projects.findOne({code: projectCode})
+        console.log(projectCollection)
+        const collectionName = require(`../model/${projectCollection.collection_name}.js`)
+        if(!collectionName) throw{
+            "message":"Collection Name Not Found "
+        }
+        console.log(collectionName)
+        const osTotalCount = await collectionName.countDocuments()
+        const osParticularCount = await collectionName.aggregate([{$group: {_id : "$osArchitecture", count : {$sum : 1}}},{$project:{osArchitecture:"$_id",count:1, _id:0}}])
+        return res.json({
+            "status":1,
+            "data":{
+              
+                deviceCount: osTotalCount,
+                osParticularCount
+            },
+            "message":"successfull"
+        })
+    } catch (error) {
+        return res.json({
+            data: {
+                err: {
+                  generatedTime: new Date(),
+                  errMsg: error.name,
+                  msg: error.message,
+                  type: 'NotFoundError'
+                }
+              }
+        })
+    }
+}
+
+const getLogsCountWithModelName = async (req,res) => {
+    try {
+        const {projectCode} = req.params;
+        
+        const projectCollection = await Projects.findOne({code: projectCode})
+        
+        const collectionName = require(`../model/${projectCollection.collection_name}.js`)
+        if(!collectionName) throw{
+            "message":"Collection Name Not Found "
+        }
+    
+        const modelTotalCount = await collectionName.countDocuments()
+        const modelNameParticularCount = await collectionName.aggregate([{$group: {_id : "$modelName", count : {$sum : 1}}},{$project:{modelName:"$_id",count:1, _id:0}}])
+        return res.json({
+            "status":1,
+            "data":{
+              
+                deviceCount: modelTotalCount,
+                modelNameParticularCount
+            },
+            "message":"successfull"
+        })
+    } catch (error) {
+        return res.json({
+            data: {
+                err: {
+                  generatedTime: new Date(),
+                  errMsg: error.name,
+                  msg: error.message,
+                  type: 'NotFoundError'
+                }
+              }
+        })
+    }
+}
+
+
+const getLogsCountWithDate = async (req,res) => {
+    try {
+        const {projectCode} = req.params;
+        console.log(projectCode)
+        const {startDate, endDate} = req.query
+        console.log(startDate,endDate)
+        const projectCollection = await Projects.findOne({code: projectCode})
+        console.log(projectCollection)
+        const collectionName = require(`../model/${projectCollection.collection_name}.js`)
+        if(!collectionName) throw{
+            "message":"Collection Name Not Found "
+        }
+        console.log(collectionName)
+        var getDaysArray = function(startDate, endDate) {
+            for(var arr=[],dt=new Date(startDate); dt<=endDate; dt.setDate(dt.getDate()+1)){
+                /* console.log(dt) */
+                arr.push(new Date(dt).toISOString().substring(0,10))
+            }
+            /* console.log(arr) */
+            return arr;
+        };
+        const dateParticularCount = await collectionName.aggregate([{$match: {createdAt: {$gte: new Date(startDate), $lte: new Date (new Date(endDate).setHours(23,59,59))}}},
+        // {$group: {_id :  { $substr: [ "$createdAt", 0, 10 ] }, count : {$sum : 1}}},{$project:{createdAt:"$_id",count:1, _id:0}}])
+        //{$group: {_id : { $cond: { if: { $substr: [ "$createdAt", 0, 10 ] },then: {count : {$sum : 1}},else: {count : {$sum : 0}}}}}},{$project:{createdAt:"$_id",count:1, _id:0}}])
+        {$group: {_id :  { $substr: [ "$createdAt", 0, 10 ] }, count : {$sum : 1}}},
+        {$project:{createdAt:"$_id",count:1, _id:0}}])
+   
+        
+        return res.json({
+            "status":1,
+            "data":{
+               dateParticularCount,
+
+            },
+            "message":"successfull"
+        })
+    } catch (error) {
+        return res.json({
+            data: {
+                err: {
+                  generatedTime: new Date(),
+                  errMsg: error.name,
+                  msg: error.message,
+                  type: 'NotFoundError'
+                }
+              }
+        })
+    }
+}
+
 
 module.exports = {
     createNewProject,
@@ -628,5 +781,8 @@ module.exports = {
     getProjectWithFilter,
     getdeviceIdProjectWise,
     getProjectLogs,
-    getDeviceCount
+    getDeviceCount,
+    getLogsCountWithOs,
+    getLogsCountWithModelName,
+    getLogsCountWithDate
 }
